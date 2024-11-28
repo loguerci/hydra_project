@@ -1,0 +1,31 @@
+<!--*********************************************************************************                                
+                                    CPAC Project
+                          Aesthetic representation of music
+                                    Loïs Guerci
+                                       2024
+*************************************************************************************-->
+
+<!-- Here is the html code to display the result of the javascript module -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RENDER</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <audio id="background-audio" src="{{ audio_url }}" allow="autoplay"></audio>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
