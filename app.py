@@ -18,6 +18,25 @@ from flask import Flask, render_template, url_for
 from flask_socketio import SocketIO, emit
 import time
 from beat_this.inference import File2Beats
+from essentia.standard import *
+
+
+
+
+def genre_recognition(audio_path):
+    with open('discogs-effnet-bs64-1.json', 'r') as json_file:
+        metadata = json.load(json_file)
+    audio = MonoLoader(filename=audio_path, sampleRate=16000, resampleQuality=4)()
+    embedding_model = essentia.standard.TensorflowPredictEffnetDiscogs(graphFilename="discogs-effnet-bs64-1.pb", output="PartitionedCall:1")
+    embeddings = embedding_model(audio)
+    model = TensorflowPredict2D(graphFilename="genre_discogs400-discogs-effnet-1.pb", input="serving_default_model_Placeholder", output="PartitionedCall:0")
+    predictions = model(embeddings)
+    index = np.argmax(np.sum(predictions, axis=0))
+    return metadata['classes'][index]
+
+def find_genre_index(tag, genres):
+    return next((i for i, genre in enumerate(genres) if tag.startswith(genre)), -1)
+
 
 # Initialize Flask and SocketIO
 app = Flask(__name__)
@@ -38,21 +57,38 @@ def init():
 def start_analysis():
     audio_path = AUDIO_FILE_PATH
     y, sr = librosa.load(audio_path)
+
+    genre = genre_recognition(audio_path)
+    print(genre)
     
+    genres = ['Electronic', 'Latin', 'Rock']
+    genre_index  = find_genre_index(genre, genres)
+    print(genre_index)
+    
+    # Extraction Audio Features
     rms = float(librosa.feature.rms(y=y).mean())
-    cent = float(librosa.feature.spectral_centroid(y=y, sr=sr).mean())
-    mfcc = float(librosa.feature.mfcc(y=y, sr=sr).mean())
-    flat = float(librosa.feature.spectral_flatness(y=y).mean())
+    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+    bpm = float(tempo[0])
+    chroma = (librosa.feature.chroma_stft(y=y, sr=sr).mean(axis=1)).tolist()
+    S = librosa.feature.melspectrogram(y=y, sr=sr)
+    mels = librosa.power_to_db(S, ref=np.max)
+    low_band = float(mels[0:40, :].mean())
+    mid_band = float(mels[40:80, :].mean())
+    high_band = float(mels[80:, :].mean())
+
+    # Extraction Real time BPM (with exact time code for each beats)
     file2beats = File2Beats(checkpoint_path="final0", dbn=False)
     beats,downbeats = file2beats(audio_path)
-    bpm = int(librosa.feature.tempo(y=y, sr=sr)+1)
-    print(bpm)
 
-    emit('audio_feature', json.dumps({"cent": cent,
-                                      "rms": rms,
-                                      "mfcc": mfcc,
-                                      "bpm": bpm,
-                                      "flat": flat}))
+    emit('audio_feature', json.dumps({
+        "genre": genre_index,
+        "rms": rms,
+        "bpm": bpm,
+        "chroma": chroma,
+        "low_band": low_band,
+        "mid_band": mid_band,
+        "high_band": high_band}))
+    
     pulse = 0
     # Emulate a real-time feed by emitting data at intervals
     for i, beat_time in enumerate(beats):
@@ -64,4 +100,4 @@ def start_analysis():
         time.sleep(next_beat_time - beat_time)  # Sleep until the next beat
 
 if __name__ == '__main__':
-    socketio.run(app) 
+    socketio.run(app, port=8080) 
