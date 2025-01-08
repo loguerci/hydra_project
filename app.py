@@ -19,7 +19,7 @@ from flask_socketio import SocketIO, emit
 import time
 from beat_this.inference import File2Beats
 from essentia.standard import *
-
+#from scrap_music import download_yt
 
 
 
@@ -46,7 +46,9 @@ if len(sys.argv) < 2:
     print("Usage: python app.py <audio_file>")
     sys.exit(1)
 
-AUDIO_FILE_PATH = sys.argv[1] 
+#download_yt(sys.argv[1])
+#AUDIO_FILE_PATH = 'static/test.mp3'
+AUDIO_FILE_PATH = sys.argv[1] #delete this line
 
 @app.route('/')
 def init():
