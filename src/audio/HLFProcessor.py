@@ -7,15 +7,19 @@ import os
 import librosa
 import json
 import time
+from .Smoother import Smoother
 
 class HLFProcessor:
-    def __init__(self, buffer_size, target_rate=16000, sample_rate=48000):
+    def __init__(self, buffer_size, output_queue, target_rate=16000, sample_rate=48000):
         self.sample_rate = sample_rate
         self.target_rate = target_rate
         self.buffer_size = buffer_size
         self.frame_queue = Queue()
         self.running = False
         self.accumulated_signal = np.array([], dtype=np.float32)
+        self.output_queue = output_queue
+        self.smoother = Smoother()
+    
     
     def process(self):
         self.setup_model()
@@ -35,18 +39,31 @@ class HLFProcessor:
 
     def run_model(self, signal):
         current_time = time.time()
-        print("model running at time: ", current_time)
+        # print("model running at time: ", current_time)
         self.buffer[:] = signal.flatten()
         reset(self.vimp)
         run(self.vimp)
-        danceability = self.pool['danceability'][0][0]
-        aggressive =  self.pool['aggressive'][0][0]
-        happy = self.pool['happy'][0][0]
-        party = self.pool['party'][0][0]
-        acoustic = self.pool['acoustic'][0][0]
-        atonal = self.pool['atonal'][0][0]
-        relaxed = 1 - self.pool['relaxed'][0][0]
-        genre = self.pool['genre'][0]
+        data = {
+            'danceability': self.pool['danceability'][0][0],
+            'aggressive': self.pool['aggressive'][0][0],
+            'happy': self.pool['happy'][0][0],
+            'party': self.pool['party'][0][0],
+            'acoustic': self.pool['acoustic'][0][0],
+            'atonal': self.pool['atonal'][0][0],
+            'relaxed': 1 - self.pool['relaxed'][0][0],
+            'genre': self.pool['genre'][0],
+            'genre_labels': self.genre_classes
+        }
+        smoothed_data = self.smoother.smooth(data)
+        self.output_queue.put(smoothed_data)
+        danceability = smoothed_data['danceability']
+        aggressive =  smoothed_data['aggressive']
+        happy = smoothed_data['happy']
+        party = smoothed_data['party']
+        acoustic = smoothed_data['acoustic']
+        atonal = smoothed_data['atonal']
+        relaxed = 1 - smoothed_data['relaxed']
+        genre = smoothed_data['genre']
 
         print(f"danceability:  {danceability:.2f}")
         print(f"aggressive:  {aggressive:.2f}")

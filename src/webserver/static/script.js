@@ -19,7 +19,7 @@ osc(50).color(1,0,0).scale(() => scale).out();
 socket.on('audio_data', (data) => {
     const parsedData = JSON.parse(data);
     console.log(parsedData);
-    scale = parsedData.mid;
+    scale = parsedData.bass;
     // triggerDecay();
     // scale = 3;
     // setTimeout(1000)

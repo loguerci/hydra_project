@@ -8,6 +8,7 @@ import time
 from threading import Thread
 from multiprocessing import Process
 from audio.HLFProcessor import HLFProcessor
+from multiprocessing import Queue
 
 class AudioProcessor:
     def __init__(self, event_manager):
@@ -16,8 +17,10 @@ class AudioProcessor:
         self.channels=1
         self.buffer_size=512
         self.event_manager = event_manager
-        self.hlf_processor = HLFProcessor(buffer_size=self.buffer_size)
+        self.hlf_queue = Queue()
+        self.hlf_processor = HLFProcessor(buffer_size=self.buffer_size, output_queue=self.hlf_queue)
         self.hlf_thread = Process(target=self.hlf_processor.process)
+        
         
 
     def process_bpm(self, signal):
