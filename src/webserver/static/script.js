@@ -18,12 +18,17 @@ let scale = 1;
 osc(50).color(1,0,0).scale(() => scale).out();
 socket.on('audio_data', (data) => {
     const parsedData = JSON.parse(data);
-    console.log(parsedData);
+    // console.log(parsedData);
     scale = parsedData.bass;
     // triggerDecay();
     // scale = 3;
     // setTimeout(1000)
     // scale = 1;
+})
+
+socket.on('hlf-data', (data) => {
+    const parsedData = JSON.parse(data);
+    console.log(parsedData);
 })
     // var x = document.getElementById("background-audio")
 

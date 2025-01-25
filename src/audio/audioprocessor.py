@@ -1,6 +1,5 @@
 import pyaudio
 import sounddevice as sd
-import aubio
 import numpy as np
 import json
 import librosa
@@ -9,28 +8,29 @@ from threading import Thread
 from multiprocessing import Process
 from audio.HLFProcessor import HLFProcessor
 from multiprocessing import Queue
+from queue import Empty
+
+#this class process the audio signal that comes from the input
+#there are two types of processing, the first one that calculates
+#features using the librosa library and the second one that calculates
+#high level features using the class HLFProcessor
 
 class AudioProcessor:
     def __init__(self, event_manager):
         self.pa = pyaudio.PyAudio()
         self.format = pyaudio.paFloat32
         self.channels=1
+        #the buffer size parameter can be modified, it will affect the frequency of the calculation of features with librosa
         self.buffer_size=512
         self.event_manager = event_manager
+        #this queue is necessary to pass data from the HLFProcessor to this class, because the HLFProcessor runs in a separate thread to avoid lags
         self.hlf_queue = Queue()
         self.hlf_processor = HLFProcessor(buffer_size=self.buffer_size, output_queue=self.hlf_queue)
         self.hlf_thread = Process(target=self.hlf_processor.process)
         
-        
 
-    def process_bpm(self, signal):
-        beat = self.tempo_detection(signal)
-        if(beat):
-            bpm = self.tempo_detection.get_bpm()
-            confidence = self.tempo_detection.get_confidence()
-            print("beat! (running with "+str(bpm)+" bpm) confidence: " + str(confidence))
-            self.event_manager.publish("audio_data", json.dumps({"pulse": True}))
 
+    #this method uses librosa to calculate some features, you can add here all the other features you need
     def calculate_fft_and_rms(self, signal):
         D = librosa.stft(signal, n_fft=self.buffer_size)
         magnitude, phase = librosa.magphase(D)
@@ -49,16 +49,15 @@ class AudioProcessor:
         self.event_manager.publish("audio_data", json.dumps({'bass': low_band_energy, 'mid': mid_band_energy, 'high': high_band_energy, 'rms': rms}))
 
 
+    #this method is called every time an audio frame is acquired from the input
 
     def process_audio_frames(self, in_data, frame_count, time_info, status):
         start_time = time.time()
         signal = np.frombuffer(in_data, dtype=np.float32)
         self.hlf_processor.add_frame(signal.copy())
         self.calculate_fft_and_rms(signal.copy())
-        # self.process_bpm(signal)
         end_time = time.time()
         elapsed_time = end_time - start_time
-        # print(f"Tempo di esecuzione: {elapsed_time*1000:.2f} ms")
         return(in_data, pyaudio.paContinue)
 
     def list_sound_devices(self):
@@ -66,11 +65,6 @@ class AudioProcessor:
     
     def set_device_index(self, index):
         self.device_index = index
-        
-    def setup_tempo_detection(self):
-        self.tempo_detection = aubio.tempo(method='default', buf_size = self.buffer_size*2, hop_size = self.buffer_size, samplerate = self.sample_rate)
-        self.tempo_detection.set_threshold(0.5)
-        self.tempo_detection.set_silence(-30)
 
 
     def start_processing(self):
@@ -79,7 +73,8 @@ class AudioProcessor:
         self.sample_rate = int(input_device['defaultSampleRate'])
         self.hlf_processor.set_sample_rate(self.sample_rate)
         self.hlf_thread.start()
-        self.setup_tempo_detection()
+        self.hlf_queue_thread = Thread(target=self.process_hlf_queue)
+        self.hlf_queue_thread.start()
         self.stream = self.pa.open(format=self.format,
                                    input=True,
                                    channels=self.channels,
@@ -87,6 +82,18 @@ class AudioProcessor:
                                    frames_per_buffer=self.buffer_size,
                                    input_device_index=self.device_index,
                                    stream_callback=self.process_audio_frames)
+
+    def process_hlf_queue(self):
+        while self.running:
+            try:
+                message = self.hlf_queue.get(timeout=0.1)
+                self.event_manager.publish("hlf-data", json.dumps(message))
+            except Empty:
+                continue
+
+
+
+
 
     def stop_processing(self):
         self.running = False
@@ -96,4 +103,5 @@ class AudioProcessor:
             self.pa.terminate()
         self.hlf_processor.stop()
         self.hlf_thread.join()
+        self.hlf_queue_thread.join()
         print("Audio processing stopped.")

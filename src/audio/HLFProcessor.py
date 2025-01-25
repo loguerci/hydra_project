@@ -152,6 +152,7 @@ class HLFProcessor:
                         inputs=[self.input_layer],
                         outputs=[self.output_layer])
         
+        
         self.ptt_danceability = PoolToTensor(namespace=self.output_layer)
         self.ptt_aggressive = PoolToTensor(namespace=self.output_layer)
         self.ptt_happy = PoolToTensor(namespace=self.output_layer)

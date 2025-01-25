@@ -1,3 +1,10 @@
+#the purpose of this class is to exchange data between two object
+#given an event type (string), the object that needs to receive data calls
+#the subscribe method, passing as parameter a function that must be executed
+#everytime data is sent
+
+#the sender calls the publich method passing as parameter the data
+
 class EventManager:
     def __init__(self):
         self.subscribers = {}

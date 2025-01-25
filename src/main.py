@@ -5,11 +5,13 @@ from webserver.server import WebServer
 from event.eventmanager import EventManager
 
 def main():
+    #the event manager purpose is to exchange data from the audio processor to the web server
     event_manager = EventManager()
 
-    web_server = WebServer(event_manager=event_manager)
+    web_server = WebServer(event_manager=event_manager, port=8080)
     audio_processor = AudioProcessor(event_manager=event_manager)
 
+    #ask for the audio input
     devices = audio_processor.list_sound_devices()
     for idx, device in enumerate(devices):
         print(f"{idx}: {device['name']}")
