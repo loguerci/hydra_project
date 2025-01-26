@@ -7,6 +7,7 @@ import time
 from threading import Thread
 from multiprocessing import Process
 from audio.HLFProcessor import HLFProcessor
+from .HLFStandardProcessor import HLFStandardProcessor
 from multiprocessing import Queue
 from queue import Empty
 
@@ -25,7 +26,7 @@ class AudioProcessor:
         self.event_manager = event_manager
         #this queue is necessary to pass data from the HLFProcessor to this class, because the HLFProcessor runs in a separate thread to avoid lags
         self.hlf_queue = Queue()
-        self.hlf_processor = HLFProcessor(buffer_size=self.buffer_size, output_queue=self.hlf_queue)
+        self.hlf_processor = HLFStandardProcessor(buffer_size=self.buffer_size, output_queue=self.hlf_queue)
         self.hlf_thread = Process(target=self.hlf_processor.process)
         
 
