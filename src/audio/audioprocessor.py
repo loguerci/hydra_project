@@ -10,6 +10,7 @@ from audio.HLFProcessor import HLFProcessor
 from .HLFStandardProcessor import HLFStandardProcessor
 from multiprocessing import Queue
 from queue import Empty
+from utils import make_dict_json_serializable
 
 #this class process the audio signal that comes from the input
 #there are two types of processing, the first one that calculates
@@ -36,6 +37,8 @@ class AudioProcessor:
         D = librosa.stft(signal, n_fft=self.buffer_size)
         magnitude, phase = librosa.magphase(D)
         mag_db = librosa.amplitude_to_db(magnitude)
+        mfcc = np.mean(librosa.feature.mfcc(y=signal, sr=self.sample_rate, n_fft=self.buffer_size, hop_length=self.buffer_size), axis=1)
+    
         rms = float(librosa.feature.rms(y=signal, frame_length=self.buffer_size, hop_length=self.buffer_size).mean())
         freqs = librosa.core.fft_frequencies(sr=self.sample_rate)
         low_freq = 200
@@ -47,7 +50,9 @@ class AudioProcessor:
         low_band_energy = float(np.mean(mag_db[:low_idx]))
         mid_band_energy = float(np.mean(mag_db[low_idx:mid_idx]))
         high_band_energy = float(np.mean(mag_db[mid_idx:high_idx]))     
-        self.event_manager.publish("audio_data", json.dumps({'bass': low_band_energy, 'mid': mid_band_energy, 'high': high_band_energy, 'rms': rms}))
+        data = {'bass': low_band_energy, 'mid': mid_band_energy, 'high': high_band_energy, 'rms': rms, 'mfcc':mfcc}
+        make_dict_json_serializable(data)
+        self.event_manager.publish("audio_data", json.dumps(data))
 
 
     #this method is called every time an audio frame is acquired from the input
