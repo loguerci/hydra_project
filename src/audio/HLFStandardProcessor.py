@@ -6,7 +6,6 @@ import json
 import time
 from .Smoother import Smoother
 import librosa
-from essentia.standard import TensorflowPredictEffnetDiscogs, TensorflowPredict2D
 
 class HLFStandardProcessor:
     def __init__(self, buffer_size, output_queue, target_rate=16000, sample_rate=48000):
@@ -48,53 +47,26 @@ class HLFStandardProcessor:
         self.buffer_size = 48348
         self.buffer_duration = (self.buffer_size / self.target_rate)
         current_dir = os.path.dirname(__file__)
-        embeddings_path = os.path.abspath(os.path.join(current_dir, '../../models', 'discogs-effnet-bs64-1.pb'))
-        genre_metadata_path = os.path.abspath(os.path.join(current_dir, '../../models', 'genre_discogs400-discogs-effnet-1.json'))
-        genre_path = os.path.abspath(os.path.join(current_dir, '../../models', 'genre_discogs400-discogs-effnet-1.pb'))
-        danceability_path = os.path.abspath(os.path.join(current_dir, '../../models', 'danceability-discogs-effnet-1.pb'))
-        acoustic_path = os.path.abspath(os.path.join(current_dir, '../../models', 'mood_acoustic-discogs-effnet-1.pb'))
-        aggressive_path = os.path.abspath(os.path.join(current_dir, '../../models', 'mood_aggressive-discogs-effnet-1.pb'))
-        happy_path = os.path.abspath(os.path.join(current_dir, '../../models', "mood_happy-discogs-effnet-1.pb"))
-        party_path = os.path.abspath(os.path.join(current_dir, '../../models', "mood_party-discogs-effnet-1.pb"))
-        relax_path = os.path.abspath(os.path.join(current_dir, '../../models', "mood_relaxed-discogs-effnet-1.pb"))
-        atonal_path = os.path.abspath(os.path.join(current_dir, '../../models', "tonal_atonal-discogs-effnet-1.pb"))
-        with open(genre_metadata_path, 'r') as json_file:
-            self.genre_metadata = json.load(json_file)
-        self.genre_classes = self.genre_metadata['classes']
-        self.embeddings_model = TensorflowPredictEffnetDiscogs(graphFilename=embeddings_path, output='PartitionedCall:1')
-        self.genre_model = TensorflowPredict2D(graphFilename=genre_path, input="serving_default_model_Placeholder", output="PartitionedCall:0")
-        self.danceability_model = TensorflowPredict2D(graphFilename=danceability_path, output="model/Softmax")
-        self.acoustic_model = TensorflowPredict2D(graphFilename=acoustic_path, output="model/Softmax")
-        self.aggressive_model = TensorflowPredict2D(graphFilename=aggressive_path, output="model/Softmax")
-        self.happy_model = TensorflowPredict2D(graphFilename=happy_path, output="model/Softmax")
-        self.party_model = TensorflowPredict2D(graphFilename=party_path, output="model/Softmax")
-        self.relax_model = TensorflowPredict2D(graphFilename=relax_path, output="model/Softmax")
-        self.atonal_model = TensorflowPredict2D(graphFilename=atonal_path, output="model/Softmax")
+
         
     def run_model(self, signal):
         audio = signal.flatten()
-        embeddings = self.embeddings_model(audio)
-        genre_predictions = self.genre_model(embeddings)
-        genre_labels, genre_predictions = self.process_genres(self.genre_classes, genre_predictions[0])
-        danceability = self.danceability_model(embeddings)
-        acousticness = self.acoustic_model(embeddings)
-        aggressive = self.aggressive_model(embeddings)
-        happy = self.happy_model(embeddings)
-        party = self.party_model(embeddings)
-        relax = self.relax_model(embeddings)
-        atonal = self.atonal_model(embeddings)
-        data = {
-            'danceability': danceability[0][0],
-            'aggressive': aggressive[0][0],
-            'happy': happy[0][0],
-            'party': 1 - party[0][0],
-            'acoustic': acousticness[0][0],
-            'atonal': atonal[0][0],
-            'relaxed': relax[0][0],
+        # genre_labels, genre_predictions = self.process_genres(self.genre_classes, genre_predictions[0])
+        genre_labels = ['Blues', 'Brass & Military', "Children's", "Classical", "Electronic", "Folk, World & Country",
+                        "Funk / Soul", "Hip Hop", "Jazz", "Latin", "Non-Music", "Pop", "Reggae", "Rock", "Stage & Screen"]
+        genre_predictions = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+        smoothed_data = {
+            'danceability': 0.1,
+            'aggressive': 0.3,
+            'happy': 0.5,
+            'party': 0.2,
+            'acoustic': 0.2,
+            'atonal': 0.2,
+            'relaxed': 0.2,
             'genre': genre_predictions,
             'genre_labels': genre_labels
         }
-        smoothed_data = self.smoother.smooth(data)
+        # smoothed_data = self.smoother.smooth(data)
         self.output_queue.put(smoothed_data)
         danceability = smoothed_data['danceability']
         aggressive =  smoothed_data['aggressive']
