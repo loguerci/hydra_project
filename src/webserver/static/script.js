@@ -102,8 +102,6 @@
     const folkworldandcountry = voronoi(10,0.6,10) //Adjust the second parameter for evolution speed.
     .add(osc(1,0,10)).kaleid(21)
     .scale(1,1,2).colorama();
-    // src(o1).mult(src(s0).modulateRotate(o1,100), -0.5)
-    //   .out(o0)
     
 
     const funkSoul = 
@@ -211,15 +209,10 @@
         let secondVisual = genresDict[genreMap[secondMaxIndex]];
         let proportion = secondMaxVal/maxVal;
         proportion = proportion/2;
-        // console.log(topGenreIndex);
-        // console.log(secondMaxIndex);
-        // console.log(proportion);
         proportion = makeExponentialProportion(proportion);
-        // console.log(proportion);
         mainVisual.out(o1);
         secondVisual.out(o2);
         src(o1).blend(o2, proportion).out();
-        // render(o3);
     }
 
     function makeExponentialProportion(p) {
@@ -229,11 +222,7 @@
     setInterval(updateOutput, 50);
 
     function dampGenres() {
-        //a.map((val, index) => alpha * val - (1 - alpha) * (b[index] || 0));
-        // console.log(dampedGenres);
-        // console.log(targetGenres);
         dampedGenres = dampedGenres.map((val, index) => alpha * targetGenres[index] + (1-alpha) * val);
-        // console.log(dampedGenres);
     }
 
     setInterval(dampGenres, 200);
