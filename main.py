@@ -1,3 +1,10 @@
+#************************************************************************************
+#                                   CPAC Project
+#                                    AudioMorph
+#             Loïs Guerci, Richard Heikkilä, Manfredi Pletti, Madhav Gopi
+#                                      2025
+#*************************************************************************************
+
 from src.audio.audioprocessor import AudioProcessor
 from threading import Thread
 import time
