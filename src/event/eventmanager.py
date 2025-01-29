@@ -5,6 +5,9 @@
 
 #the sender calls the publich method passing as parameter the data
 
+import logging
+logger = logging.getLogger(__name__)
+
 class EventManager:
     def __init__(self):
         self.subscribers = {}
@@ -13,6 +16,7 @@ class EventManager:
         if event_type not in self.subscribers:
             self.subscribers[event_type] = []
         self.subscribers[event_type].append(callback)
+        logger.debug(callback.__self__.__class__.__name__ + " subscribed to event " + event_type + " with callback " + callback.__name__)
 
     def publish(self, event_type, data):
         if event_type in self.subscribers:

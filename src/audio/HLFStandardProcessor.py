@@ -6,7 +6,7 @@ import json
 from .Smoother import Smoother
 import librosa
 from essentia.standard import TensorflowPredictEffnetDiscogs, TensorflowPredict2D
-from utils import normalize_array
+from src.utils import normalize_array
 
 class HLFStandardProcessor:
     def __init__(self, buffer_size, output_queue, target_rate=16000, sample_rate=48000):
@@ -97,6 +97,7 @@ class HLFStandardProcessor:
         smoothed_data = self.smoother.smooth(data)
         smoothed_data['genre'] = normalize_array(smoothed_data['genre'])
         self.output_queue.put(smoothed_data)
+        
         danceability = smoothed_data['danceability']
         aggressive =  smoothed_data['aggressive']
         happy = smoothed_data['happy']

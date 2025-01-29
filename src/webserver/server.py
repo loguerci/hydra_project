@@ -1,5 +1,9 @@
 from flask import Flask, render_template 
 from flask_socketio import SocketIO
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 #this class is the webserver, its purpose are to send the html page
 #and to send the websocket messages with the data acquired from the audio input
@@ -18,7 +22,7 @@ class WebServer:
         
         @self.socketio.on('connected')
         def user_connected():
-            print("User connected")
+            logger.info("user connected")
 
         self.event_manager.subscribe("audio_data", self.send_audio_data)
         self.event_manager.subscribe("hlf-data", self.send_hlf_data)

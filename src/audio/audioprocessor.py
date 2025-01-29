@@ -3,14 +3,12 @@ import sounddevice as sd
 import numpy as np
 import json
 import librosa
-import time
 from threading import Thread
 from multiprocessing import Process
-from audio.HLFProcessor import HLFProcessor
 from .HLFStandardProcessor import HLFStandardProcessor
 from multiprocessing import Queue
 from queue import Empty
-from utils import make_dict_json_serializable
+from ..utils import make_dict_json_serializable
 
 #this class process the audio signal that comes from the input
 #there are two types of processing, the first one that calculates
@@ -37,8 +35,7 @@ class AudioProcessor:
         D = librosa.stft(signal, n_fft=self.buffer_size)
         magnitude, phase = librosa.magphase(D)
         mag_db = librosa.amplitude_to_db(magnitude)
-        mfcc = np.mean(librosa.feature.mfcc(y=signal, sr=self.sample_rate, n_fft=self.buffer_size, hop_length=self.buffer_size), axis=1)
-    
+        mfcc = np.mean(librosa.feature.mfcc(y=signal, sr=self.sample_rate, n_fft=512), axis=1)
         rms = float(librosa.feature.rms(y=signal, frame_length=self.buffer_size, hop_length=self.buffer_size).mean())
         freqs = librosa.core.fft_frequencies(sr=self.sample_rate)
         low_freq = 200
@@ -58,12 +55,9 @@ class AudioProcessor:
     #this method is called every time an audio frame is acquired from the input
 
     def process_audio_frames(self, in_data, frame_count, time_info, status):
-        start_time = time.time()
         signal = np.frombuffer(in_data, dtype=np.float32)
         self.hlf_processor.add_frame(signal.copy())
         self.calculate_fft_and_rms(signal.copy())
-        end_time = time.time()
-        elapsed_time = end_time - start_time
         return(in_data, pyaudio.paContinue)
 
     def list_sound_devices(self):
@@ -96,9 +90,6 @@ class AudioProcessor:
                 self.event_manager.publish("hlf-data", json.dumps(message))
             except Empty:
                 continue
-
-
-
 
 
     def stop_processing(self):
