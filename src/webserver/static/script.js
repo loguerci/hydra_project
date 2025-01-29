@@ -228,18 +228,13 @@
     setInterval(dampGenres, 200);
 
     function dampAudioFeatures() {
-        console.log("damping")
         Object.keys(dampedAudioFeatures).forEach(key => {
             dampedAudioFeatures[key] = targetAudioFeatures[key] * alpha_features  + dampedAudioFeatures[key] * (1-alpha_features);
         });
-        console.log(targetAudioFeatures);
-        console.log(dampedAudioFeatures);
    }
 
    setInterval(dampAudioFeatures, 200);
 
-   
-   console.log("Press 'Enter' to start audio analysis.");
    
    document.head.appendChild(hydraScript);
    
