@@ -3,7 +3,6 @@ from queue import Empty
 import numpy as np
 import os
 import json
-import time
 from .Smoother import Smoother
 import librosa
 from essentia.standard import TensorflowPredictEffnetDiscogs, TensorflowPredict2D
@@ -18,7 +17,7 @@ class HLFStandardProcessor:
         self.running = False
         self.accumulated_signal = np.array([], dtype=np.float32)
         self.output_queue = output_queue
-        self.smoother = Smoother(alpha=0.2)
+        self.smoother = Smoother(alpha=0.5)
 
     def process(self):
         self.setup_model()

@@ -20,12 +20,17 @@ class Smoother:
                 self.smoothed_data[key] = (
                     self.alpha * value + (1 - self.alpha) * self.smoothed_data[key]
                 )
-            elif isinstance(value, (int, np.floating, float)):  
+            elif isinstance(value, (int, np.floating, float)): 
                 self.smoothed_data[key] = (
                     self.alpha * value + (1 - self.alpha) * self.smoothed_data[key]
                 )
             elif isinstance(value, list) and all(isinstance(v, str) for v in value):  
                 self.smoothed_data[key] = value  
+            elif isinstance(value, list) and all(isinstance(v, float) for v in value):
+                ndvalue = np.array(value, dtype=np.float32)
+                smoothednpvalues = np.array(self.smoothed_data[key], dtype=np.float32)
+                newvalues = self.alpha * ndvalue + (1 - self.alpha) * smoothednpvalues
+                self.smoothed_data[key] = newvalues.tolist()
             else:
                 self.smoothed_data[key] = value  
 
@@ -40,7 +45,6 @@ class Smoother:
             elif isinstance(value, np.float32):
                 d[key] = float(value)
             elif isinstance(value, list):
-                # Conversione ricorsiva per liste contenenti ndarray o float32
                 d[key] = [
                     item.tolist() if isinstance(item, np.ndarray) else
                     float(item) if isinstance(item, np.float32) else
