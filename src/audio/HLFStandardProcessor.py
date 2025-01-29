@@ -76,7 +76,7 @@ class HLFStandardProcessor:
         audio = signal.flatten()
         embeddings = self.embeddings_model(audio)
         genre_predictions = self.genre_model(embeddings)
-        genre_labels, genre_predictions = self.process_genres(self.genre_classes, genre_predictions[0])
+        genre_labels, genre_predictions = self.process_genres(self.genre_classes, genre_predictions)
         danceability = self.danceability_model(embeddings)
         acousticness = self.acoustic_model(embeddings)
         aggressive = self.aggressive_model(embeddings)
@@ -127,6 +127,7 @@ class HLFStandardProcessor:
 
 
     def process_genres(self, labels, values):
+        values = np.sum(values, axis=0)
         main_labels = np.array([label.split('---')[0] for label in labels])
         unique_labels = np.unique(main_labels)
         summed_values = np.array([values[main_labels == label].max() for label in unique_labels])
