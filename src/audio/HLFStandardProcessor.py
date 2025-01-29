@@ -7,6 +7,7 @@ import time
 from .Smoother import Smoother
 import librosa
 from essentia.standard import TensorflowPredictEffnetDiscogs, TensorflowPredict2D
+from utils import normalize_array
 
 class HLFStandardProcessor:
     def __init__(self, buffer_size, output_queue, target_rate=16000, sample_rate=48000):
@@ -17,7 +18,7 @@ class HLFStandardProcessor:
         self.running = False
         self.accumulated_signal = np.array([], dtype=np.float32)
         self.output_queue = output_queue
-        self.smoother = Smoother()
+        self.smoother = Smoother(alpha=0.2)
 
     def process(self):
         self.setup_model()
@@ -95,6 +96,7 @@ class HLFStandardProcessor:
             'genre_labels': genre_labels
         }
         smoothed_data = self.smoother.smooth(data)
+        smoothed_data['genre'] = normalize_array(smoothed_data['genre'])
         self.output_queue.put(smoothed_data)
         danceability = smoothed_data['danceability']
         aggressive =  smoothed_data['aggressive']
@@ -114,11 +116,18 @@ class HLFStandardProcessor:
         genre_index = np.argmax(genre)
         genre_label = genre_labels[genre_index]
         genre_value = genre[genre_index]
+
+        genre_copy = genre.copy();
+        genre_copy[genre_index] = -np.inf
+        genre_index_2 = np.argmax(genre_copy)
+        genre_label_2 = genre_labels[genre_index_2]
+        genre_value_2 = genre[genre_index_2]
         print(f"genre: {genre_label} ({genre_value:.2f})")
+        print(f"genre 2: {genre_label_2} ({genre_value_2:.2f})")
 
 
-    def process_genres(self, classes, values):
-        main_labels = np.array([clazz.split('---')[0] for clazz in classes])
+    def process_genres(self, labels, values):
+        main_labels = np.array([label.split('---')[0] for label in labels])
         unique_labels = np.unique(main_labels)
-        summed_values = np.array([values[main_labels == label].sum() for label in unique_labels])
+        summed_values = np.array([values[main_labels == label].max() for label in unique_labels])
         return unique_labels, summed_values

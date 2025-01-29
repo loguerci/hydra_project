@@ -15,3 +15,9 @@ def make_dict_json_serializable(d):
                 float(item) if isinstance(item, np.float32) else
                 item for item in value
             ]
+
+
+def normalize_array(arr):
+    total = sum(arr)
+    normalized_arr = [x / total for x in arr]
+    return normalized_arr
