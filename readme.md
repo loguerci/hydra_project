@@ -27,7 +27,7 @@ Then, open localhost:8080 in your browser and start experiencing Audiomorph!
 
 ## Limitations
 - Currently, due to compatibility issues with the Essentia library, the app requires Python version <= 3.12 and NumPy version <= 1.26.4.
-- The app does not run on Windows systems at the moment.
+- The app does not run on Windows systems at the moment (working on Linux but hard to setup).
 
 ## Contributions
 Contributions are welcome! If you'd like to contribute to the project, please fork the repository and submit a pull request with your improvements.
